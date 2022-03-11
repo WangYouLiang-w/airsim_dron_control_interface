@@ -1,0 +1,2 @@
+# airsim_dron_control_interface
+1、实现了对airsim仿真平台中无人机的控制  2、实现了对airsim中的视频流获取到刺激界面
