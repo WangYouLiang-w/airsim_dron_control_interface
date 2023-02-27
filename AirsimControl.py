@@ -5,6 +5,8 @@ import keyboard
 import time
 import socket
 import cv2
+import plotly.express as px
+
 
 class AirsimControlKeyBoard():
     def __init__(self,IP="127.0.0.1"):
@@ -18,6 +20,16 @@ class AirsimControlKeyBoard():
         self.send_rc_control = False
         self.speed_add = 0.25
         self.AirsimIP = IP
+        self.FlyPath = []
+
+    def draw_figure(self, df):
+        df = np.array(df)
+        plot ={'x':[],'y':[],'z':[]}
+        plot['x'] = df[:,0]
+        plot['y'] = df[:,1]
+        plot['z'] = df[:,2]
+        fig = px.line_3d(plot, x="x", y="y", z="z")
+        fig.show()
 
     def connect_airsim(self):
         '''
@@ -48,6 +60,7 @@ class AirsimControlKeyBoard():
             self.airsim_client.enableApiControl(True)       # 获取控制权
             self.airsim_client.armDisarm(True)              # 解锁
             self.airsim_client.takeoffAsync().join()
+            self.airsim_client.moveToZAsync(-3.42, 1).join()
             self.isfly = True
             self.send_rc_control = True
             print('You are controling now!')
@@ -58,6 +71,7 @@ class AirsimControlKeyBoard():
             self.send_rc_control = False
             self.airsim_client.armDisarm(False)   # 上锁
             self.airsim_client.enableApiControl(False)
+            self.draw_figure(self.FlyPath)
             print('I am landing')
 
         # 前后移动
@@ -73,14 +87,16 @@ class AirsimControlKeyBoard():
 
         # 左右移动
         elif x.event_type == 'down' and x.name == right.name :
-            self.yaw_v = self.right_left_v + self.speed_add
-            if self.yaw_v > self.maxVelocity:
-                self.yaw_v = self.maxVelocity
+            # self.yaw_v = self.right_left_v + self.speed_add
+            # if self.yaw_v > self.maxVelocity:
+            #     self.yaw_v = self.maxVelocity
+            self.yaw_v = 15
 
         elif x.event_type == 'down' and x.name == left.name :
-            self.yaw_v = self.yaw_v - self.speed_add
-            if self.yaw_v < -self.maxVelocity:
-                self.yaw_v = -self.maxVelocity
+            # self.yaw_v = self.yaw_v - self.speed_add
+            # if self.yaw_v < -self.maxVelocity:
+            #     self.yaw_v = -self.maxVelocity
+            self.yaw_v = -15
 
         # 上下移动
         elif x.event_type == 'down' and x.name == up.name:
@@ -98,11 +114,13 @@ class AirsimControlKeyBoard():
             self.right_left_v = self.right_left_v + self.speed_add
             if self.right_left_v > self.maxVelocity:
                 self.right_left_v = self.maxVelocity
+          
 
         elif x.event_type == 'down' and x.name == a.name :
             self.right_left_v = self.right_left_v - self.speed_add
             if self.right_left_v < -self.maxVelocity:
                 self.right_left_v = -self.maxVelocity
+           
 
         else:
             self.right_left_v = 0
@@ -118,12 +136,14 @@ class AirsimControlKeyBoard():
         :return:
         '''
         if self.send_rc_control:
-            self.airsim_client.moveByVelocityBodyFrameAsync(self.for_back_v, self.right_left_v, self.up_down_v, duration = 0.5, yaw_mode = airsim.YawMode(is_rate = True, yaw_or_rate = (self.yaw_v)*20))
+            self.airsim_client.moveByVelocityBodyFrameAsync(self.for_back_v, self.right_left_v, self.up_down_v, duration = 0.5, yaw_mode = airsim.YawMode(is_rate = True, yaw_or_rate = self.yaw_v))
             state = self.airsim_client.getMultirotorState().kinematics_estimated
-            x_position = np.round(state.position.x_val, 3)
-            y_position = np.round(state.position.y_val, 3)
-            z_position = np.round(state.position.z_val, 3)
+            x_position = np.round(-state.position.x_val, 3)
+            y_position = np.round(-state.position.y_val, 3)
+            z_position = np.round(-state.position.z_val, 3)
+            self.FlyPath.append([x_position,y_position,z_position])
             print('x:{}, y:{}, z:{}'.format(x_position, y_position, z_position))
+
 
 
 
@@ -250,9 +270,10 @@ class BrainControlCenter:
 
             # 记录无人机的飞行轨迹
             state = self.airsim_client.getMultirotorState().kinematics_estimated
-            x_position = np.round(state.position.x_val, 3)
-            y_position = np.round(state.position.y_val, 3)
-            z_position = np.round(state.position.z_val, 3)
+            x_position = np.round(-state.position.x_val, 3)
+            y_position = np.round(-state.position.y_val, 3)
+            z_position = np.round(-state.position.z_val, 3)
+            
             print('x:{}, y:{}, z:{}'.format(x_position, y_position, z_position))
 
 
@@ -286,6 +307,7 @@ if __name__ == '__main__':
     GetAirsimVideo = AirsimVideo(IP)
     GetAirsimVideo.setDaemon(True)
     GetAirsimVideo.start()
+
 
     if mode == 'keyboard':
         keyboard_control_dron = AirsimControlKeyBoard(IP)
