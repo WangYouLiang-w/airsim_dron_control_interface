@@ -6,6 +6,7 @@ import time
 import socket
 import cv2
 import plotly.express as px
+import pandas as pd
 
 
 class AirsimControlKeyBoard():
@@ -24,12 +25,20 @@ class AirsimControlKeyBoard():
 
     def draw_figure(self, df):
         df = np.array(df)
-        plot ={'x':[],'y':[],'z':[]}
+        plot ={'x':[],'y':[],'z':[],'path':'dron'}
+        plot_UE4 = {'x':[0, 0, 0, 0, 0, 0, 16, 17.29, 17.29, 17.29],
+                    'y':[0, 17.1, 17.1, 34.195, 34.195, 59.09, 59.09, 59.09, 59.09, 31.725],
+                    'z':[2.5, 2.5, 4.5, 4.5, 2.5, 2.5, 2.5, 2.5, 5.5, 5.5],'path':'Origin'}
         plot['x'] = df[:,0]
         plot['y'] = df[:,1]
         plot['z'] = df[:,2]
-        fig = px.line_3d(plot, x="x", y="y", z="z")
+
+        df1 = pd.DataFrame(plot_UE4)
+        df2 = pd.DataFrame(plot)
+        DataFrame = pd.concat ([df1,df2],axis=0,ignore_index=True)
+        fig = px.line_3d(DataFrame, x="x", y="y", z="z",color='path')
         fig.show()
+ 
 
     def connect_airsim(self):
         '''
@@ -55,6 +64,12 @@ class AirsimControlKeyBoard():
         right = keyboard.KeyboardEvent('down', 28, 'right')     # 右转
         t = keyboard.KeyboardEvent('down', 28, 't')             # 起飞获取控制
         l = keyboard.KeyboardEvent('down', 28, 'l')             # 降落释放控制
+        r= keyboard.KeyboardEvent('down', 28, 'r')              # 保持坐标数据
+
+        if x.event_type == 'down' and x.name == r.name:
+            np.save('path',self.FlyPath)
+
+
         # 起飞按键
         if x.event_type == 'down' and x.name == t.name and self.isfly == False:
             self.airsim_client.enableApiControl(True)       # 获取控制权
@@ -71,7 +86,7 @@ class AirsimControlKeyBoard():
             self.send_rc_control = False
             self.airsim_client.armDisarm(False)   # 上锁
             self.airsim_client.enableApiControl(False)
-            self.draw_figure(self.FlyPath)
+            # self.draw_figure(self.FlyPath)
             print('I am landing')
 
         # 前后移动
