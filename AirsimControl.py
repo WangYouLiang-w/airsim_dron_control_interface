@@ -173,6 +173,7 @@ class BrainControlCenter:
         self.DronSpeed = np.array([0,0,0,0])
         self.isfly = False
         self.send_rc_control = False
+        self.yaw_v = 0
 
 
     def connect_airsim(self):
@@ -193,62 +194,68 @@ class BrainControlCenter:
         '''
         '''起飞或降落'''
         if command == str(b'2'):
-            self.airsim_client.enableApiControl(True)       # 获取控制权
-            self.airsim_client.armDisarm(True)
-            self.airsim_client.takeoffAsync().join()
-            self.isfly = True
-            self.send_rc_control = True
-            print('You are controling now!')
+            if self.isfly == False:
+                self.airsim_client.enableApiControl(True)       # 获取控制权
+                self.airsim_client.armDisarm(True)
+                self.airsim_client.takeoffAsync().join()
+                self.airsim_client.moveToZAsync(-3.42, 1).join()
+                self.isfly = True
+                self.send_rc_control = True
+                print('You are controling now!')
 
         # 降落按键
-        if command == str(b'9'):
-            self.airsim_client.landAsync().join()
-            self.isfly = False
-            self.send_rc_control = False
-            self.airsim_client.armDisarm(False)   # 上锁
-            self.airsim_client.enableApiControl(False)
-            print('I am landing')
+        elif command == str(b'9'):
+            if self.isfly == True:
+                self.airsim_client.landAsync().join()
+                self.isfly = False
+                self.send_rc_control = False
+                self.airsim_client.armDisarm(False)   # 上锁
+                self.airsim_client.enableApiControl(False)
+                print('I am landing')
 
-        '''方向控制'''
-        # 速度单位为 cm/s
-        # 前后控制
-        if command == str(b'3'):
+        # '''方向控制'''
+        # # 速度单位为 cm/s
+        # # 前后控制
+        elif command == str(b'3'):
             self.SpeedVectorUpdata(0)
-            self.DronSpeed = self.SpeedVectors*250
+            self.DronSpeed = self.SpeedVectors*25
 
         elif command == str(b'8'):
             self.SpeedVectorUpdata(0)
-            self.DronSpeed = self.SpeedVectors*(-250)
+            self.DronSpeed = self.SpeedVectors*(-25)
 
         # 左右控制
         elif command == str(b'0'):
             self.SpeedVectorUpdata(1)
-            self.DronSpeed = self.SpeedVectors*250
+            self.DronSpeed = self.SpeedVectors*25
 
         elif command == str(b'6'):
             self.SpeedVectorUpdata(1)
-            self.DronSpeed = self.SpeedVectors*(-250)
+            self.DronSpeed = self.SpeedVectors*(-25)
 
         # 上下控制
         elif command == str(b'7'):
             self.SpeedVectorUpdata(2)
-            self.DronSpeed = self.SpeedVectors*250
+            self.DronSpeed = self.SpeedVectors*25
 
         elif command == str(b'4'):
             self.SpeedVectorUpdata(2)
-            self.DronSpeed = self.SpeedVectors*(-250)
+            self.DronSpeed = self.SpeedVectors*(-25)
 
         # 旋转控制
         elif command == str(b'1'):
-            self.SpeedVectorUpdata(3)
-            self.DronSpeed = self.SpeedVectors*250
+           self.yaw_v = 15
 
         elif command == str(b'5'):
-            self.SpeedVectorUpdata(3)
-            self.DronSpeed = self.SpeedVectors*(-250)
+            self.yaw_v = -15
 
         elif command == str(b'10'):
-            self.DronSpeed = self.DronSpeed
+            # if self.SpeedVectors[0] == 4 or self.SpeedVectors[1] == 4 or self.SpeedVectors[2] == 4:
+            #     self.DronSpeed = self.DronSpeed
+            # else:
+            self.DronSpeed = np.array([0,0,0,0]) # 保持悬停
+            self.yaw_v  = 0
+       
 
 
     def SpeedVectorUpdata(self, index):
@@ -281,7 +288,7 @@ class BrainControlCenter:
             self.SpeedUpdata(str(recvData))
 
             self.airsim_client.moveByVelocityBodyFrameAsync(self.DronSpeed[0]/100, self.DronSpeed[1]/100, self.DronSpeed[2]/100, duration = 0.5,
-                                                            yaw_mode = airsim.YawMode(is_rate = True, yaw_or_rate = (self.DronSpeed[3]/100)*20))
+                                                            yaw_mode = airsim.YawMode(is_rate = True, yaw_or_rate = self.yaw_v))
 
             # 记录无人机的飞行轨迹
             state = self.airsim_client.getMultirotorState().kinematics_estimated
