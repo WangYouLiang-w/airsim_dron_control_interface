@@ -133,33 +133,35 @@ class AsyBrainControlCenter:
         elif command == str(b'10'):
             if self.SpeedVectors[0] == 4 or self.SpeedVectors[1] == 4 or self.SpeedVectors[2] == 4 or self.SpeedVectors[3] == 4:
                 self.set_speed(self.DronSpeed)
-                self.send_feedback(self.DronSpeed)  # 如果保持原速，就出现反馈
             else:
                 self.airsim_client.hoverAsync()
+        self.send_feedback(self.DronSpeed)  # 如果保持原速，就出现反馈
 
 
     def send_feedback(self, DronSpeed):
         if DronSpeed[0] == 4*self.speed_add:
-            command = '3'
+            cd = 3
         elif DronSpeed[0] == -4*self.speed_add:
-            command = '8'
+            cd = 8
         
         elif DronSpeed[1] == 4*self.speed_add:
-            command = '1'
+            cd = 1
         elif DronSpeed[1] == -4*self.speed_add:
-            command = '5'
+            cd = 5
         
         elif DronSpeed[2] == 4*self.speed_add:
-            command = '7'
-        elif DronSpeed[2] == 4*self.speed_add:
-            command = '4'
+            cd = 7
+        elif DronSpeed[2] == -4*self.speed_add:
+            cd = 4
 
         elif DronSpeed[3] == 4*self.speed_add:
-            command = '0'
+            cd = 0
         elif DronSpeed[3] == 4*self.speed_add:
-            command = '6'
+            cd = 6
+        else:
+            cd = 10
         
-        self.client_socket.sendto(bytes(command, "utf8"),(self.AirsimIP, 7830))
+        self.client_socket.sendto(bytes(str(cd+1), "utf8"), (self.AirsimIP, 7830))
         
             
 
@@ -184,7 +186,7 @@ class AsyBrainControlCenter:
                 self.airsim_client.enableApiControl(True)       # 获取控制权
                 self.airsim_client.armDisarm(True)              # 解锁
                 self.airsim_client.takeoffAsync().join()
-                self.airsim_client.moveToZAsync(-3.3, 1).join()
+                self.airsim_client.moveToZAsync(-2.5, 1).join()
                 self.isfly = True
                 self.send_rc_control = True
                 print('You are controling now!')
@@ -200,8 +202,6 @@ class AsyBrainControlCenter:
             z_position = np.round(-state.position.z_val, 3)
             self.FlyPath.append([x_position,y_position,z_position])
             print('x:{}, y:{}, z:{}'.format(x_position, y_position, z_position))
-
-
 
 
 class SynBrainControlCenter:
@@ -324,7 +324,7 @@ class SynBrainControlCenter:
                 self.airsim_client.enableApiControl(True)       # 获取控制权
                 self.airsim_client.armDisarm(True)              # 解锁
                 self.airsim_client.takeoffAsync().join()
-                self.airsim_client.moveToZAsync(-3.43, 1).join()
+                self.airsim_client.moveToZAsync(-2.5, 1).join()
                 self.isfly = True
                 self.send_rc_control = True
                 print('You are controling now!')
@@ -344,13 +344,13 @@ class SynBrainControlCenter:
 
 if __name__ == '__main__':
     subject = 'wyl'
-    runloop = 'Asy_01'
+    runloop = 'Asy_02'
 
-    filename = subject+ '_' + runloop
+    filename = subject + '_' + runloop
     if os.path.exists('./data/' + filename) == False:
         os.makedirs('./data/' + filename)
 
-    IP = "192.168.56.3"
+    IP = "192.168.1.3"
     GetAirsimVideo = AirsimVideo(IP)
     GetAirsimVideo.setDaemon(True)
     GetAirsimVideo.start()
