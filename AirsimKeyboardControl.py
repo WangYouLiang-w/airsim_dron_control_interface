@@ -19,7 +19,7 @@ class AirsimControlKeyBoard():
         self.isfly = False
         self.maxVelocity = 1
         self.send_rc_control = False
-        self.speed_add = 0.25
+        self.speed_add = 0.1
         self.AirsimIP = IP
         self.FlyPath = []
 
@@ -162,7 +162,7 @@ class AirsimControlKeyBoard():
 
 
 class AirsimVideo(Thread):
-    def __init__(self,IP):
+    def __init__(self,IP='127.0.0.1'):
         Thread.__init__(self)
         self.AirsimClient = airsim.MultirotorClient(IP)
         self.AirsimClient.confirmConnection()
@@ -186,11 +186,11 @@ class AirsimVideo(Thread):
 
 if __name__ == '__main__':
     IP = "192.168.56.3"
-    GetAirsimVideo = AirsimVideo(IP)
+    GetAirsimVideo = AirsimVideo()
     GetAirsimVideo.setDaemon(True)
     GetAirsimVideo.start()
 
-    keyboard_control_dron = AirsimControlKeyBoard(IP)
+    keyboard_control_dron = AirsimControlKeyBoard()
     keyboard_control_dron.connect_airsim()
     keyboard.hook(keyboard_control_dron.keydownFunc)
     keyboard.wait()

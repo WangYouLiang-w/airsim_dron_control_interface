@@ -44,6 +44,7 @@ class AsyBrainControlCenter:
         self.AirsimIP = IP
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((IP,port))
         self.FlyPath = []
         self.SpeedVectors = np.array([0,0,0,0])  # for_back、left_righ、down_uo、yaw
@@ -132,9 +133,35 @@ class AsyBrainControlCenter:
         elif command == str(b'10'):
             if self.SpeedVectors[0] == 4 or self.SpeedVectors[1] == 4 or self.SpeedVectors[2] == 4 or self.SpeedVectors[3] == 4:
                 self.set_speed(self.DronSpeed)
+                self.send_feedback(self.DronSpeed)  # 如果保持原速，就出现反馈
             else:
                 self.airsim_client.hoverAsync()
 
+
+    def send_feedback(self, DronSpeed):
+        if DronSpeed[0] == 4*self.speed_add:
+            command = '3'
+        elif DronSpeed[0] == -4*self.speed_add:
+            command = '8'
+        
+        elif DronSpeed[1] == 4*self.speed_add:
+            command = '1'
+        elif DronSpeed[1] == -4*self.speed_add:
+            command = '5'
+        
+        elif DronSpeed[2] == 4*self.speed_add:
+            command = '7'
+        elif DronSpeed[2] == 4*self.speed_add:
+            command = '4'
+
+        elif DronSpeed[3] == 4*self.speed_add:
+            command = '0'
+        elif DronSpeed[3] == 4*self.speed_add:
+            command = '6'
+        
+        self.client_socket.sendto(bytes(command, "utf8"),(self.AirsimIP, 7830))
+        
+            
 
     def set_speed(self,DronSpeed):
         self.for_back_v = DronSpeed[0]/100
@@ -317,7 +344,7 @@ class SynBrainControlCenter:
 
 if __name__ == '__main__':
     subject = 'wyl'
-    runloop = 'Asy_02'
+    runloop = 'Asy_01'
 
     filename = subject+ '_' + runloop
     if os.path.exists('./data/' + filename) == False:
