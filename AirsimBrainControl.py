@@ -31,8 +31,9 @@ class AirsimVideo(Thread):
                 continue
 
 
-class AsyBrainControlCenter:
+class AsyBrainControlCenter(Thread):
     def __init__(self,port,IP="127.0.0.1"):
+        Thread.__init__(self)
         self.airsim_client = None
         self.right_left_v = 0
         self.for_back_v = 0
@@ -170,7 +171,7 @@ class AsyBrainControlCenter:
         self.right_left_v = DronSpeed[1]/100
         self.up_down_v = DronSpeed[2]/100
         self.yaw_v = (DronSpeed[3]/100)*10
-        self.airsim_client.moveByVelocityBodyFrameAsync(self.for_back_v, self.right_left_v, self.up_down_v, duration = 0.5, yaw_mode = airsim.YawMode(is_rate = True, yaw_or_rate = self.yaw_v))
+        self.airsim_client.moveByVelocityBodyFrameAsync(self.for_back_v, self.right_left_v/2, self.up_down_v/2, duration = 0.5, yaw_mode = airsim.YawMode(is_rate = True, yaw_or_rate = self.yaw_v))
 
 
     def updata(self):
@@ -186,7 +187,7 @@ class AsyBrainControlCenter:
                 self.airsim_client.enableApiControl(True)       # 获取控制权
                 self.airsim_client.armDisarm(True)              # 解锁
                 self.airsim_client.takeoffAsync().join()
-                self.airsim_client.moveToZAsync(-2.5, 1).join()
+                self.airsim_client.moveToZAsync(-3.0, 1).join()
                 self.isfly = True
                 self.send_rc_control = True
                 print('You are controling now!')
@@ -202,6 +203,13 @@ class AsyBrainControlCenter:
             z_position = np.round(-state.position.z_val, 3)
             self.FlyPath.append([x_position,y_position,z_position])
             print('x:{}, y:{}, z:{}'.format(x_position, y_position, z_position))
+
+    def run(self):
+        self.connect_airsim()
+        while True:
+            self.updata()
+
+
 
 
 class SynBrainControlCenter:
@@ -308,7 +316,7 @@ class SynBrainControlCenter:
         self.right_left_v = DronSpeed[1]/100
         self.up_down_v = DronSpeed[2]/100
         self.yaw_v = (DronSpeed[3]/100)*10
-        self.airsim_client.moveByVelocityBodyFrameAsync(self.for_back_v, self.right_left_v, self.up_down_v, duration = 0.5, yaw_mode = airsim.YawMode(is_rate = True, yaw_or_rate = self.yaw_v))
+        self.airsim_client.moveByVelocityBodyFrameAsync(self.for_back_v, self.right_left_v, self.up_down_v/2, duration = 0.5, yaw_mode = airsim.YawMode(is_rate = True, yaw_or_rate = self.yaw_v))
 
 
     def updata(self):
@@ -344,7 +352,7 @@ class SynBrainControlCenter:
 
 if __name__ == '__main__':
     subject = 'wyl'
-    runloop = 'Asy_02'
+    runloop = 'Asy_05'
 
     filename = subject + '_' + runloop
     if os.path.exists('./data/' + filename) == False:
@@ -356,9 +364,10 @@ if __name__ == '__main__':
     GetAirsimVideo.start()
 
     brain_control_dron = AsyBrainControlCenter(7820, IP)
-    brain_control_dron.connect_airsim()
+    brain_control_dron.setDaemon(True)
+    brain_control_dron.start()
+
     while True:
-        brain_control_dron.updata()
         if keyboard.is_pressed('esc'):
             np.save('./data/' + filename+'/PathData.npy', brain_control_dron.FlyPath)
             break

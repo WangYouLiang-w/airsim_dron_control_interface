@@ -5,8 +5,8 @@ import keyboard
 import time
 import socket
 import cv2
-import plotly.express as px
-import pandas as pd
+# import plotly.express as px
+# import pandas as pd
 
 
 class AirsimControlKeyBoard():
@@ -75,7 +75,7 @@ class AirsimControlKeyBoard():
             self.airsim_client.enableApiControl(True)       # 获取控制权
             self.airsim_client.armDisarm(True)              # 解锁
             self.airsim_client.takeoffAsync().join()
-            self.airsim_client.moveToZAsync(-3.42, 1).join()
+            self.airsim_client.moveToZAsync(-2.5, 1).join()
             self.isfly = True
             self.send_rc_control = True
             print('You are controling now!')
@@ -185,7 +185,7 @@ class AirsimVideo(Thread):
 
 
 if __name__ == '__main__':
-    IP = "192.168.56.3"
+    IP = "192.168.1.3"
     GetAirsimVideo = AirsimVideo()
     GetAirsimVideo.setDaemon(True)
     GetAirsimVideo.start()
