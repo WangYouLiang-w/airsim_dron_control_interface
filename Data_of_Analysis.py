@@ -28,3 +28,12 @@ class AnalysisMethod:
         fig = px.line_3d(DataFrame, x="x", y="y", z="z",color='path')
         fig.show()
 
+
+Analysis = AnalysisMethod()
+
+subject = 'cwz'
+runloop = 'Asy_07'
+filename = subject + '_' + runloop
+df = np.load('./data/' + filename+'/PathData.npy')
+
+Analysis.draw_path_figure(df)
